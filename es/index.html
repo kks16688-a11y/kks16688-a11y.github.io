@@ -1,0 +1,818 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#143642">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vocab">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Vocabulario — 스페인어 단어장</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ===== 색과 글꼴 (구엘 공원 타일에서 가져온 색들) ===== */
+  :root {
+    --mar:     #143642;   /* 지중해 짙은 청록 — 배경 */
+    --cal:     #faf4e8;   /* 석회 벽 흰색 — 카드 */
+    --cal-2:   #efe5d3;
+    --tinta:   #22201d;   /* 글씨 */
+    --ocre:    #e0a526;   /* 황토 */
+    --teja:    #c24d3f;   /* 기와 붉은색 */
+    --verd:    #4e9b8f;   /* 청동 녹색 */
+    --cel:     #6c8ebf;   /* 하늘 파랑 */
+    --arena:   #d4b483;   /* 모래 */
+    --bruma:   rgba(250,244,232,.55);
+
+    --display: "Abril Fatface", Georgia, serif;
+    --sans:    "Noto Sans KR", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--mar);
+    color: var(--cal);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  /* ===== 머리말 ===== */
+  .masthead {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  }
+  .brand-es {
+    font-family: var(--display); font-size: 40px; line-height: .95;
+    margin: 0; letter-spacing: -.01em;
+  }
+  .brand-es .mark { color: var(--ocre); }
+  .brand-ko { font-size: 12px; letter-spacing: .22em; color: var(--bruma); margin: 10px 0 0; }
+  .tally {
+    font-family: var(--display); font-size: 12px; color: var(--bruma);
+    text-align: right; line-height: 1.6; white-space: nowrap;
+  }
+  .tally b { display: block; font-size: 30px; color: var(--cal); }
+
+  /* ===== 트렌카디스 — 외운 단어만큼 채워지는 모자이크 띠 ===== */
+  .mosaic {
+    display: flex; flex-wrap: wrap; gap: 3px;
+    margin: 20px 0 6px; padding: 12px;
+    background: rgba(0,0,0,.18); border-radius: 3px;
+    min-height: 54px; align-content: flex-start;
+  }
+  .tile {
+    height: 13px; border-radius: 1px;
+    background: transparent;
+    border: 1px solid rgba(250,244,232,.14);
+    transition: background .35s ease, border-color .35s ease;
+  }
+  .tile.set { border-color: transparent; }
+  .tile.pop { animation: tilePop .45s cubic-bezier(.3,1.5,.5,1); }
+  @keyframes tilePop {
+    0%   { transform: scale(.2) rotate(-14deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+  .mosaic-note {
+    font-size: 11px; color: rgba(250,244,232,.4);
+    letter-spacing: .12em; margin: 0 0 18px;
+  }
+
+  /* ===== 탭 ===== */
+  .tabs {
+    display: flex; gap: 26px; margin: 0 0 18px;
+    border-bottom: 1px solid rgba(250,244,232,.16);
+  }
+  .tab {
+    background: none; border: 0; padding: 0 0 10px;
+    font-family: var(--sans); font-size: 15px; font-weight: 500;
+    color: var(--bruma); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab[aria-selected="true"] { color: var(--cal); border-bottom-color: var(--ocre); }
+  .tab:focus-visible { outline: 2px solid var(--ocre); outline-offset: 4px; }
+
+  .panel[hidden] { display: none; }
+
+  /* ===== 갈래 고르기 ===== */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+  .chip {
+    background: transparent; border: 1px solid rgba(250,244,232,.24);
+    color: var(--bruma); border-radius: 2px;
+    padding: 7px 14px; font-family: var(--sans); font-size: 13px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ocre); border-color: var(--ocre);
+    color: var(--mar); font-weight: 700;
+  }
+  .chip:focus-visible { outline: 2px solid var(--cal); outline-offset: 3px; }
+
+  /* ===== 단어 넣는 곳 ===== */
+  .composer {
+    background: rgba(0,0,0,.16); border: 1px solid rgba(250,244,232,.14);
+    border-radius: 3px; padding: 18px; margin-bottom: 24px;
+  }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 11px; letter-spacing: .16em;
+    color: var(--bruma); margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%; background: transparent; border: 0;
+    border-bottom: 1px solid rgba(250,244,232,.28);
+    color: var(--cal); font-family: var(--sans); font-size: 17px; padding: 5px 0;
+  }
+  .field select option { background: var(--mar); }
+  .field input:focus, .field select:focus { outline: 0; border-bottom-color: var(--ocre); }
+  .field input::placeholder { color: rgba(250,244,232,.3); }
+
+  .add-btn {
+    width: 100%; margin-top: 6px; padding: 12px;
+    background: var(--teja); color: #fff; border: 0; border-radius: 2px;
+    font-family: var(--sans); font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .add-btn:hover { filter: brightness(1.1); }
+  .add-btn:focus-visible { outline: 2px solid var(--cal); outline-offset: 3px; }
+
+  .note { font-size: 12px; color: var(--bruma); margin: 10px 0 0; min-height: 16px; }
+
+  /* ===== 단어 목록 ===== */
+  .list { list-style: none; margin: 0; padding: 0; }
+  .row {
+    display: flex; align-items: baseline; gap: 11px;
+    padding: 14px 2px; border-bottom: 1px solid rgba(250,244,232,.1);
+  }
+  .row .es { font-size: 18px; font-weight: 500; line-height: 1.25; }
+  .row .say { font-size: 12px; color: var(--bruma); }
+  .row .ko { margin-left: auto; font-size: 14px; color: rgba(250,244,232,.82); text-align: right; }
+  .row .del {
+    background: none; border: 0; color: rgba(250,244,232,.3);
+    font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px;
+  }
+  .row .del:hover { color: var(--teja); }
+  .marks { font-size: 10px; color: var(--ocre); letter-spacing: .12em; }
+
+  .empty {
+    padding: 44px 8px; text-align: center;
+    color: var(--bruma); font-size: 14px; line-height: 1.9;
+  }
+  .empty .big {
+    display: block; font-family: var(--display); font-size: 44px;
+    color: rgba(250,244,232,.24); margin-bottom: 10px;
+  }
+
+  /* ===== 시험 카드 ===== */
+  .stage { perspective: 1200px; position: relative; }
+  .card {
+    position: relative; width: 100%; min-height: 250px; cursor: pointer;
+    transform-style: preserve-3d; transition: transform .5s cubic-bezier(.22,.7,.3,1);
+    border: 0; padding: 0; background: none; font: inherit; display: block;
+  }
+  .card.is-flipped { transform: rotateY(180deg); }
+  .card:focus-visible { outline: 2px solid var(--ocre); outline-offset: 6px; }
+
+  .face {
+    position: absolute; inset: 0; backface-visibility: hidden;
+    background: var(--cal); color: var(--tinta); border-radius: 2px;
+    box-shadow: 0 14px 34px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px 24px; text-align: center;
+  }
+  .face.back { transform: rotateY(180deg); background: var(--cal-2); }
+
+  .face .word {
+    font-family: var(--display);
+    font-size: clamp(30px, 8.5vw, 46px); line-height: 1.1;
+  }
+  .face .say {
+    font-size: 14px; color: rgba(34,32,29,.5);
+    letter-spacing: .1em; margin-top: 14px; min-height: 20px;
+  }
+  .face .meaning { font-size: clamp(20px, 5.5vw, 26px); font-weight: 500; line-height: 1.4; }
+  .face .hint {
+    position: absolute; bottom: 15px; font-size: 11px;
+    letter-spacing: .16em; color: rgba(34,32,29,.35);
+  }
+
+  /* 맞혔을 때 타일 조각이 흩어지는 효과 */
+  .burst { position: absolute; top: 50%; left: 50%; pointer-events: none; z-index: 4; }
+  .shard {
+    position: absolute; width: 13px; height: 13px; border-radius: 1px;
+    animation: fly .72s cubic-bezier(.15,.7,.4,1) forwards;
+  }
+  @keyframes fly {
+    0%   { transform: translate(0,0) rotate(0) scale(.3); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(1); opacity: 0; }
+  }
+
+  .judge { display: flex; gap: 12px; margin-top: 20px; }
+  .judge button {
+    flex: 1; padding: 15px 10px; border-radius: 2px;
+    font-family: var(--sans); font-size: 15px; font-weight: 700;
+    cursor: pointer; border: 1px solid;
+  }
+  .judge .yes { background: var(--verd); border-color: var(--verd); color: #fff; }
+  .judge .no  { background: transparent; border-color: rgba(250,244,232,.34); color: var(--cal); }
+  .judge button:disabled { opacity: .28; cursor: default; }
+  .judge button:focus-visible { outline: 2px solid var(--ocre); outline-offset: 3px; }
+
+  .progress {
+    margin-top: 16px; font-size: 12px; color: var(--bruma);
+    text-align: center; letter-spacing: .1em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .shard, .tile.pop { animation: none; }
+    .shard { opacity: 0; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <h1 class="brand-es"><span class="mark">¡</span>Vocabulario<span class="mark">!</span></h1>
+      <p class="brand-ko">스페인어 단어장 · 바르셀로나</p>
+    </div>
+    <div class="tally"><b id="count">0</b>palabras</div>
+  </header>
+
+  <div class="mosaic" id="mosaic"></div>
+  <p class="mosaic-note" id="mosaic-note"></p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-list" role="tab" aria-selected="true" aria-controls="panel-list">단어장</button>
+    <button class="tab" id="tab-quiz" role="tab" aria-selected="false" aria-controls="panel-quiz">시험</button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <!-- 단어장 -->
+  <section class="panel" id="panel-list" role="tabpanel" aria-labelledby="tab-list">
+    <div class="composer">
+      <div class="field">
+        <label for="f-word">스페인어</label>
+        <input id="f-word" placeholder="la cuenta" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-say">발음 (없으면 비워두세요)</label>
+        <input id="f-say" placeholder="라 쿠엔타" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-mean">뜻</label>
+        <input id="f-mean" placeholder="계산서" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-cat">갈래</label>
+        <select id="f-cat">
+          <option value="viaje">여행·이동</option>
+          <option value="comida">식당·음식</option>
+          <option value="basico">기초 회화</option>
+          <option value="numeros">숫자·시간</option>
+          <option value="verbos">동사</option>
+          <option value="bcn">바르셀로나</option>
+        </select>
+      </div>
+      <button class="add-btn" id="add">단어 넣기</button>
+      <p class="note" id="note"></p>
+    </div>
+
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <!-- 시험 -->
+  <section class="panel" id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+    <div class="stage">
+      <button class="card" id="card">
+        <div class="face front">
+          <div class="word" id="c-word">—</div>
+          <div class="say" id="c-say"></div>
+          <div class="hint">눌러서 뒤집기</div>
+        </div>
+        <div class="face back">
+          <div class="meaning" id="c-mean">—</div>
+          <div class="hint">눌러서 되돌리기</div>
+        </div>
+      </button>
+      <div class="burst" id="burst"></div>
+    </div>
+
+    <div class="judge">
+      <button class="no"  id="j-no">아직이요</button>
+      <button class="yes" id="j-yes">알아요</button>
+    </div>
+    <p class="progress" id="progress"></p>
+  </section>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// 1. 갈래 이름표
+// ─────────────────────────────────────────────
+const CATS = {
+  viaje:   '여행·이동',
+  comida:  '식당·음식',
+  basico:  '기초 회화',
+  numeros: '숫자·시간',
+  verbos:  '동사',
+  bcn:     '바르셀로나',
+};
+
+// ─────────────────────────────────────────────
+// 2. 기본으로 들어있는 단어 [스페인어, 발음, 뜻, 갈래]
+// ─────────────────────────────────────────────
+const SEED = [
+  // ── 여행·이동 (40)
+  ['el billete','엘 비예테','표, 티켓','viaje'],
+  ['el equipaje','엘 에키파헤','짐, 수하물','viaje'],
+  ['la maleta','라 말레타','캐리어','viaje'],
+  ['el aeropuerto','엘 아에로푸에르토','공항','viaje'],
+  ['la estación','라 에스타시온','역','viaje'],
+  ['el andén','엘 안덴','승강장','viaje'],
+  ['el metro','엘 메트로','지하철','viaje'],
+  ['el autobús','엘 아우토부스','버스','viaje'],
+  ['el tren','엘 트렌','기차','viaje'],
+  ['la parada','라 파라다','정류장','viaje'],
+  ['el vuelo','엘 부엘로','항공편','viaje'],
+  ['la salida','라 살리다','출발, 출구','viaje'],
+  ['la llegada','라 예가다','도착','viaje'],
+  ['la entrada','라 엔트라다','입장권, 입구','viaje'],
+  ['el retraso','엘 레트라소','연착, 지연','viaje'],
+  ['el horario','엘 오라리오','시간표','viaje'],
+  ['ida y vuelta','이다 이 부엘타','왕복','viaje'],
+  ['solo ida','솔로 이다','편도','viaje'],
+  ['el asiento','엘 아시엔토','좌석','viaje'],
+  ['la reserva','라 레세르바','예약','viaje'],
+  ['el hotel','엘 오텔','호텔','viaje'],
+  ['la habitación','라 아비타시온','방, 객실','viaje'],
+  ['la llave','라 야베','열쇠','viaje'],
+  ['el ascensor','엘 아센소르','엘리베이터','viaje'],
+  ['la planta','라 플란타','층','viaje'],
+  ['el mapa','엘 마파','지도','viaje'],
+  ['la calle','라 카예','거리, 길','viaje'],
+  ['la plaza','라 플라사','광장','viaje'],
+  ['el barrio','엘 바리오','동네, 지구','viaje'],
+  ['la playa','라 플라야','해변','viaje'],
+  ['el museo','엘 무세오','박물관','viaje'],
+  ['la iglesia','라 이글레시아','성당, 교회','viaje'],
+  ['el mercado','엘 메르카도','시장','viaje'],
+  ['la tienda','라 티엔다','가게','viaje'],
+  ['el baño','엘 바뇨','화장실','viaje'],
+  ['la farmacia','라 파르마시아','약국','viaje'],
+  ['la policía','라 폴리시아','경찰','viaje'],
+  ['perdido','페르디도','길을 잃은','viaje'],
+  ['el carné de conducir','엘 카르네 데 콘두시르','운전면허증','viaje'],
+  ['el peaje','엘 페아헤','통행료','viaje'],
+
+  // ── 식당·음식 (40)
+  ['la carta','라 카르타','메뉴판','comida'],
+  ['la cuenta','라 쿠엔타','계산서','comida'],
+  ['la propina','라 프로피나','팁','comida'],
+  ['la mesa','라 메사','테이블','comida'],
+  ['el camarero','엘 카마레로','종업원','comida'],
+  ['el desayuno','엘 데사유노','아침 식사','comida'],
+  ['el almuerzo','엘 알무에르소','점심 식사','comida'],
+  ['la cena','라 세나','저녁 식사','comida'],
+  ['el plato','엘 플라토','요리, 접시','comida'],
+  ['la tapa','라 타파','타파스','comida'],
+  ['la ración','라 라시온','나눠 먹는 큰 접시','comida'],
+  ['el menú del día','엘 메누 델 디아','오늘의 세트 메뉴','comida'],
+  ['la paella','라 파에야','파에야','comida'],
+  ['el pan','엘 판','빵','comida'],
+  ['el jamón','엘 하몬','하몽','comida'],
+  ['el queso','엘 케소','치즈','comida'],
+  ['la carne','라 카르네','고기','comida'],
+  ['el pollo','엘 포요','닭고기','comida'],
+  ['el cerdo','엘 세르도','돼지고기','comida'],
+  ['la ternera','라 테르네라','소고기','comida'],
+  ['el pescado','엘 페스카도','생선','comida'],
+  ['el marisco','엘 마리스코','해산물','comida'],
+  ['la gamba','라 감바','새우','comida'],
+  ['el pulpo','엘 풀포','문어','comida'],
+  ['la verdura','라 베르두라','채소','comida'],
+  ['la ensalada','라 엔살라다','샐러드','comida'],
+  ['el arroz','엘 아로스','쌀, 밥','comida'],
+  ['la sopa','라 소파','수프','comida'],
+  ['el postre','엘 포스트레','디저트','comida'],
+  ['el agua','엘 아과','물','comida'],
+  ['el vino tinto','엘 비노 틴토','레드 와인','comida'],
+  ['la cerveza','라 세르베사','맥주','comida'],
+  ['el café con leche','엘 카페 콘 레체','카페라테','comida'],
+  ['el zumo','엘 수모','주스','comida'],
+  ['el hielo','엘 이엘로','얼음','comida'],
+  ['la sal','라 살','소금','comida'],
+  ['picante','피칸테','매운','comida'],
+  ['rico','리코','맛있는','comida'],
+  ['para llevar','파라 예바르','포장으로','comida'],
+  ['sin gluten','신 글루텐','글루텐 없이','comida'],
+
+  // ── 기초 회화 (40)
+  ['hola','올라','안녕하세요','basico'],
+  ['adiós','아디오스','안녕히 가세요','basico'],
+  ['buenos días','부에노스 디아스','좋은 아침','basico'],
+  ['buenas tardes','부에나스 타르데스','좋은 오후','basico'],
+  ['buenas noches','부에나스 노체스','좋은 밤','basico'],
+  ['gracias','그라시아스','고맙습니다','basico'],
+  ['de nada','데 나다','천만에요','basico'],
+  ['por favor','포르 파보르','부탁합니다','basico'],
+  ['perdón','페르돈','죄송합니다','basico'],
+  ['disculpe','디스쿨페','실례합니다','basico'],
+  ['sí','시','네','basico'],
+  ['no','노','아니요','basico'],
+  ['vale','발레','오케이, 알겠어요','basico'],
+  ['¿cuánto cuesta?','쿠안토 쿠에스타','얼마예요?','basico'],
+  ['¿dónde está...?','돈데 에스타','어디에 있나요?','basico'],
+  ['no entiendo','노 엔티엔도','못 알아듣겠어요','basico'],
+  ['no hablo español','노 아블로 에스파뇰','스페인어 못해요','basico'],
+  ['¿habla inglés?','아블라 잉글레스','영어 하세요?','basico'],
+  ['más despacio','마스 데스파시오','더 천천히','basico'],
+  ['otra vez','오트라 베스','다시 한 번','basico'],
+  ['¿qué tal?','케 탈','어떻게 지내요?','basico'],
+  ['mucho gusto','무초 구스토','반갑습니다','basico'],
+  ['hasta luego','아스타 루에고','나중에 봐요','basico'],
+  ['la ayuda','라 아유다','도움','basico'],
+  ['abierto','아비에르토','열림, 영업 중','basico'],
+  ['cerrado','세라도','닫힘','basico'],
+  ['gratis','그라티스','무료','basico'],
+  ['el precio','엘 프레시오','가격','basico'],
+  ['barato','바라토','싼','basico'],
+  ['caro','카로','비싼','basico'],
+  ['grande','그란데','큰','basico'],
+  ['pequeño','페케뇨','작은','basico'],
+  ['bueno','부에노','좋은','basico'],
+  ['malo','말로','나쁜','basico'],
+  ['cerca','세르카','가까이','basico'],
+  ['lejos','레호스','멀리','basico'],
+  ['aquí','아키','여기','basico'],
+  ['allí','아이','저기','basico'],
+  ['la izquierda','라 이스키에르다','왼쪽','basico'],
+  ['la derecha','라 데레차','오른쪽','basico'],
+
+  // ── 숫자·시간 (30)
+  ['uno','우노','1','numeros'],
+  ['dos','도스','2','numeros'],
+  ['tres','트레스','3','numeros'],
+  ['cuatro','쿠아트로','4','numeros'],
+  ['cinco','신코','5','numeros'],
+  ['seis','세이스','6','numeros'],
+  ['siete','시에테','7','numeros'],
+  ['ocho','오초','8','numeros'],
+  ['nueve','누에베','9','numeros'],
+  ['diez','디에스','10','numeros'],
+  ['veinte','베인테','20','numeros'],
+  ['cincuenta','신쿠엔타','50','numeros'],
+  ['cien','시엔','100','numeros'],
+  ['mil','밀','1000','numeros'],
+  ['el euro','엘 에우로','유로','numeros'],
+  ['hoy','오이','오늘','numeros'],
+  ['mañana','마냐나','내일 (또는 아침)','numeros'],
+  ['ayer','아예르','어제','numeros'],
+  ['la semana','라 세마나','주','numeros'],
+  ['el mes','엘 메스','달, 월','numeros'],
+  ['el año','엘 아뇨','해, 년','numeros'],
+  ['el lunes','엘 루네스','월요일','numeros'],
+  ['el viernes','엘 비에르네스','금요일','numeros'],
+  ['el sábado','엘 사바도','토요일','numeros'],
+  ['el domingo','엘 도밍고','일요일','numeros'],
+  ['la hora','라 오라','시간','numeros'],
+  ['el minuto','엘 미누토','분','numeros'],
+  ['¿qué hora es?','케 오라 에스','몇 시예요?','numeros'],
+  ['la tarde','라 타르데','오후','numeros'],
+  ['la noche','라 노체','밤','numeros'],
+
+  // ── 동사 (30)
+  ['ser','세르','~이다 (변하지 않는 성질)','verbos'],
+  ['estar','에스타르','~이다, 있다 (상태·위치)','verbos'],
+  ['tener','테네르','가지다','verbos'],
+  ['hacer','아세르','하다, 만들다','verbos'],
+  ['ir','이르','가다','verbos'],
+  ['venir','베니르','오다','verbos'],
+  ['querer','케레르','원하다','verbos'],
+  ['poder','포데르','할 수 있다','verbos'],
+  ['saber','사베르','알다 (사실을)','verbos'],
+  ['conocer','코노세르','알다 (사람·장소를)','verbos'],
+  ['hablar','아블라르','말하다','verbos'],
+  ['comer','코메르','먹다','verbos'],
+  ['beber','베베르','마시다','verbos'],
+  ['comprar','콤프라르','사다','verbos'],
+  ['pagar','파가르','지불하다','verbos'],
+  ['ver','베르','보다','verbos'],
+  ['mirar','미라르','바라보다','verbos'],
+  ['buscar','부스카르','찾다','verbos'],
+  ['llegar','예가르','도착하다','verbos'],
+  ['salir','살리르','나가다, 출발하다','verbos'],
+  ['entrar','엔트라르','들어가다','verbos'],
+  ['esperar','에스페라르','기다리다','verbos'],
+  ['abrir','아브리르','열다','verbos'],
+  ['cerrar','세라르','닫다','verbos'],
+  ['dormir','도르미르','자다','verbos'],
+  ['andar','안다르','걷다','verbos'],
+  ['tomar','토마르','타다, 마시다, 잡다','verbos'],
+  ['necesitar','네세시타르','필요하다','verbos'],
+  ['gustar','구스타르','마음에 들다','verbos'],
+  ['ayudar','아유다르','돕다','verbos'],
+
+  // ── 바르셀로나 (20) · 카탈루냐어 포함
+  ['bon dia','본 디아','안녕하세요 (카탈루냐어)','bcn'],
+  ['gràcies','그라시에스','고맙습니다 (카탈루냐어)','bcn'],
+  ['si us plau','시 우스 플라우','부탁합니다 (카탈루냐어)','bcn'],
+  ['adéu','아데우','안녕히 (카탈루냐어)','bcn'],
+  ['el carrer','엘 카레르','거리 (카탈루냐어)','bcn'],
+  ['la plaça','라 플라사','광장 (카탈루냐어)','bcn'],
+  ['el passeig','엘 파세치','산책로 (카탈루냐어)','bcn'],
+  ['la Sagrada Familia','라 사그라다 파밀리아','사그라다 파밀리아','bcn'],
+  ['el Eixample','엘 에이샴플레','에이샴플레 지구','bcn'],
+  ['el Barri Gòtic','엘 바리 고틱','고딕 지구','bcn'],
+  ['la Rambla','라 람블라','람블라 거리','bcn'],
+  ['el modernismo','엘 모데르니스모','모데르니스모 (건축 양식)','bcn'],
+  ['el trencadís','엘 트렌카디스','깨진 타일 모자이크','bcn'],
+  ['la sardana','라 사르다나','카탈루냐 전통 춤','bcn'],
+  ['pa amb tomàquet','파 암 토마케트','토마토 문지른 빵','bcn'],
+  ['la calçotada','라 칼소타다','대파 구이 (겨울 별미)','bcn'],
+  ['el vermut','엘 베르뭇','베르무트 (식전주)','bcn'],
+  ['el chiringuito','엘 치링기토','해변 간이 식당','bcn'],
+  ['el carril bici','엘 카릴 비시','자전거 도로','bcn'],
+  ['la T-casual','라 테 카수알','대중교통 10회 승차권','bcn'],
+];
+
+const KEY = 'es-vocab:words';
+const TILE_COLORS = ['var(--ocre)','var(--teja)','var(--verd)','var(--cel)','var(--arena)'];
+
+let words   = [];
+let filter  = 'all';
+let queue   = [];
+let current = null;
+
+const $ = id => document.getElementById(id);
+const makeId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// ─────────────────────────────────────────────
+// 3. 저장하고 불러오기
+// ─────────────────────────────────────────────
+// 저장소 — 클로드 안에서는 window.storage, 폰/브라우저에서는 localStorage
+const hasWinStore = typeof window.storage !== 'undefined'
+  && window.storage && typeof window.storage.get === 'function';
+
+const store = {
+  async get(k) {
+    if (hasWinStore) {
+      try { const r = await window.storage.get(k); return r && r.value ? r.value : null; }
+      catch (e) { return null; }
+    }
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  },
+  async set(k, v) {
+    if (hasWinStore) {
+      try { await window.storage.set(k, v); return; } catch (e) {}
+    }
+    try { localStorage.setItem(k, v); } catch (e) {}
+  }
+};
+
+async function save() {
+  await store.set(KEY, JSON.stringify(words));
+}
+
+function seedWords() {
+  return SEED.map(([es, say, ko, cat]) => ({ es, say, ko, cat, hit: 0, id: makeId() }));
+}
+
+async function loadWords() {
+  let saved = [];
+  try {
+    const raw = await store.get(KEY);
+    if (raw) saved = JSON.parse(raw);
+  } catch (e) {}
+
+  if (saved.length === 0) return seedWords();
+
+  // 저장된 단어는 그대로 두고, 새로 늘어난 기본 단어만 뒤에 붙이기
+  const have = new Set(saved.map(w => w.es));
+  return saved.concat(seedWords().filter(w => !have.has(w.es)));
+}
+
+// ─────────────────────────────────────────────
+// 4. 화면 그리기
+// ─────────────────────────────────────────────
+function visible() {
+  return filter === 'all' ? words : words.filter(w => w.cat === filter);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// 트렌카디스 모자이크: 단어 하나 = 타일 하나, 외우면 색이 들어옴
+function renderMosaic(popId) {
+  const rows = visible();
+  const done = rows.filter(w => (w.hit || 0) > 0).length;
+
+  $('mosaic').innerHTML = rows.map((w, i) => {
+    const width  = 15 + ((i * 7) % 5) * 4;          // 조각마다 폭을 다르게
+    const filled = (w.hit || 0) > 0;
+    const color  = TILE_COLORS[i % TILE_COLORS.length];
+    const pop    = w.id === popId ? ' pop' : '';
+    return `<span class="tile${filled ? ' set' + pop : ''}"
+      style="width:${width}px;${filled ? `background:${color};` : ''}"></span>`;
+  }).join('');
+
+  $('mosaic-note').textContent = rows.length
+    ? `${done} / ${rows.length} 조각이 채워졌어요`
+    : '';
+}
+
+function renderChips() {
+  const list = [['all','전체']].concat(Object.keys(CATS).map(k => [k, CATS[k]]));
+  $('chips').innerHTML = list.map(([key, label]) => {
+    const n = key === 'all' ? words.length : words.filter(w => w.cat === key).length;
+    return `<button class="chip" data-cat="${key}" aria-pressed="${filter === key}">${label} ${n}</button>`;
+  }).join('');
+}
+
+function renderList() {
+  $('count').textContent = visible().length;
+  const ul = $('list');
+  const rows = visible();
+
+  if (rows.length === 0) {
+    ul.innerHTML = `<li class="empty"><span class="big">¿?</span>
+      이 갈래에는 아직 단어가 없어요.<br>위에 하나 넣어보세요.</li>`;
+    return;
+  }
+
+  ul.innerHTML = rows.map(w => `
+    <li class="row">
+      <span class="es">${esc(w.es)}</span>
+      ${w.say ? `<span class="say">${esc(w.say)}</span>` : ''}
+      <span class="marks">${'◆'.repeat(Math.min(w.hit || 0, 3))}</span>
+      <span class="ko">${esc(w.ko)}</span>
+      <button class="del" data-id="${w.id}" aria-label="${esc(w.es)} 지우기">×</button>
+    </li>
+  `).join('');
+}
+
+function renderAll(popId) { renderChips(); renderMosaic(popId); renderList(); }
+
+// ─────────────────────────────────────────────
+// 5. 갈래 고르기
+// ─────────────────────────────────────────────
+$('chips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  filter = chip.dataset.cat;
+  renderAll();
+  if (!$('panel-quiz').hidden) startQuiz();
+});
+
+// ─────────────────────────────────────────────
+// 6. 단어 넣기 / 지우기
+// ─────────────────────────────────────────────
+function addWord() {
+  const es  = $('f-word').value.trim();
+  const say = $('f-say').value.trim();
+  const ko  = $('f-mean').value.trim();
+  const cat = $('f-cat').value;
+
+  if (!es || !ko) {
+    $('note').textContent = '스페인어와 뜻은 둘 다 채워주세요.';
+    return;
+  }
+
+  words.unshift({ es, say, ko, cat, hit: 0, id: makeId() });
+  save();
+  renderAll();
+
+  $('f-word').value = $('f-say').value = $('f-mean').value = '';
+  $('f-word').focus();
+  $('note').textContent = `${es} 담았어요.`;
+  setTimeout(() => { $('note').textContent = ''; }, 2200);
+}
+
+$('add').addEventListener('click', addWord);
+['f-word','f-say','f-mean'].forEach(id => {
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') addWord(); });
+});
+
+$('list').addEventListener('click', e => {
+  const btn = e.target.closest('.del');
+  if (!btn) return;
+  words = words.filter(w => w.id !== btn.dataset.id);
+  save();
+  renderAll();
+});
+
+// ─────────────────────────────────────────────
+// 7. 탭 전환
+// ─────────────────────────────────────────────
+function showTab(which) {
+  const isQuiz = which === 'quiz';
+  $('tab-list').setAttribute('aria-selected', String(!isQuiz));
+  $('tab-quiz').setAttribute('aria-selected', String(isQuiz));
+  $('panel-list').hidden = isQuiz;
+  $('panel-quiz').hidden = !isQuiz;
+  if (isQuiz) startQuiz();
+}
+$('tab-list').addEventListener('click', () => showTab('list'));
+$('tab-quiz').addEventListener('click', () => showTab('quiz'));
+
+// ─────────────────────────────────────────────
+// 8. 시험
+// ─────────────────────────────────────────────
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  queue = shuffle(visible());
+  nextCard();
+}
+
+function nextCard() {
+  $('card').classList.remove('is-flipped');
+
+  if (queue.length === 0) {
+    current = null;
+    const has = visible().length > 0;
+    $('c-say').textContent = '';
+    $('c-word').textContent = has ? '¡Olé!' : '¿?';
+    $('c-mean').textContent = has ? '한 바퀴 다 돌았어요' : '이 갈래에는 단어가 없어요';
+    $('progress').textContent = has ? '시험 탭을 다시 누르면 처음부터' : '';
+    $('j-yes').disabled = $('j-no').disabled = true;
+    return;
+  }
+
+  current = queue.shift();
+  $('j-yes').disabled = $('j-no').disabled = false;
+  $('c-word').textContent = current.es;
+  $('c-say').textContent = current.say || '';
+  $('c-mean').textContent = current.ko;
+  $('progress').textContent = `남은 단어 ${queue.length}개`;
+}
+
+$('card').addEventListener('click', () => {
+  $('card').classList.toggle('is-flipped');
+});
+
+$('j-yes').addEventListener('click', () => {
+  if (!current) return;
+  const found = words.find(w => w.id === current.id);
+  if (found) found.hit = (found.hit || 0) + 1;
+  save();
+  breakTiles();
+  renderAll(current.id);
+  setTimeout(nextCard, 700);
+});
+
+$('j-no').addEventListener('click', () => {
+  if (!current) return;
+  queue.push(current);   // 모르는 단어는 뒤로 다시 보내기
+  nextCard();
+});
+
+// 타일 조각이 흩어지는 효과
+function breakTiles() {
+  const box = $('burst');
+  box.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const angle = (Math.PI * 2 * i) / 9 + Math.random() * .4;
+    const dist  = 70 + Math.random() * 55;
+    const s = document.createElement('span');
+    s.className = 'shard';
+    s.style.background = TILE_COLORS[i % TILE_COLORS.length];
+    s.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+    s.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+    s.style.setProperty('--rot', `${Math.random() * 300 - 150}deg`);
+    box.appendChild(s);
+  }
+  setTimeout(() => { box.innerHTML = ''; }, 800);
+}
+
+// ─────────────────────────────────────────────
+// 9. 시작
+// ─────────────────────────────────────────────
+(async function init() {
+  words = await loadWords();
+  await save();
+  renderAll();
+})();
+
+// 인터넷 없이도 열리게 하기 (해외에서 데이터 없을 때)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>

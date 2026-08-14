@@ -1,0 +1,699 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#16233d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="単語帳">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>단어장 — 일본어</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ===== 색과 글꼴 ===== */
+  :root {
+    --ai:      #16233d;   /* 藍 — 배경 인디고 */
+    --washi:   #f2ede3;   /* 生成り — 종이 카드 */
+    --washi-2: #e5ddcd;
+    --sumi:    #23201c;   /* 墨 — 먹 글씨 */
+    --shu:     #d93e30;   /* 朱 — 하나마루 빨강 */
+    --take:    #5b8c6e;   /* 若竹 — 대나무 초록 */
+    --mist:    rgba(242,237,227,.55);
+
+    --mincho: "Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", serif;
+    --sans:   "Noto Sans KR", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ai);
+    color: var(--washi);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  /* ===== 머리말 ===== */
+  .masthead {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 16px; padding-bottom: 18px;
+    border-bottom: 1px solid rgba(242,237,227,.18);
+  }
+  .brand-jp {
+    font-family: var(--mincho); font-weight: 700; font-size: 34px;
+    letter-spacing: .18em; line-height: 1; margin: 0;
+  }
+  .brand-ko { font-size: 12px; letter-spacing: .22em; color: var(--mist); margin: 9px 0 0; }
+  .tally {
+    font-family: var(--mincho); font-size: 13px; color: var(--mist);
+    text-align: right; line-height: 1.5; white-space: nowrap;
+  }
+  .tally b { display: block; font-size: 26px; color: var(--washi); font-weight: 700; }
+
+  /* ===== 탭 ===== */
+  .tabs { display: flex; gap: 26px; margin: 22px 0 20px; }
+  .tab {
+    background: none; border: 0; padding: 0 0 8px;
+    font-family: var(--sans); font-size: 15px; font-weight: 500;
+    color: var(--mist); cursor: pointer; border-bottom: 2px solid transparent;
+  }
+  .tab[aria-selected="true"] { color: var(--washi); border-bottom-color: var(--shu); }
+  .tab:focus-visible { outline: 2px solid var(--shu); outline-offset: 4px; }
+
+  .panel[hidden] { display: none; }
+
+  /* ===== 갈래 고르기 ===== */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+  .chip {
+    background: transparent; border: 1px solid rgba(242,237,227,.24);
+    color: var(--mist); border-radius: 999px;
+    padding: 7px 15px; font-family: var(--sans); font-size: 13px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--washi); border-color: var(--washi); color: var(--ai); font-weight: 700;
+  }
+  .chip:focus-visible { outline: 2px solid var(--shu); outline-offset: 3px; }
+
+  /* ===== 단어 넣는 곳 ===== */
+  .composer {
+    background: rgba(0,0,0,.16); border: 1px solid rgba(242,237,227,.14);
+    border-radius: 4px; padding: 18px; margin-bottom: 24px;
+  }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 11px; letter-spacing: .16em;
+    color: var(--mist); margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%; background: transparent; border: 0;
+    border-bottom: 1px solid rgba(242,237,227,.28);
+    color: var(--washi); font-family: var(--sans); font-size: 17px; padding: 5px 0;
+  }
+  .field select option { background: var(--ai); }
+  .field input#f-word { font-family: var(--mincho); font-size: 21px; }
+  .field input:focus, .field select:focus { outline: 0; border-bottom-color: var(--shu); }
+  .field input::placeholder { color: rgba(242,237,227,.3); }
+
+  .add-btn {
+    width: 100%; margin-top: 6px; padding: 12px;
+    background: var(--shu); color: #fff; border: 0; border-radius: 3px;
+    font-family: var(--sans); font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .add-btn:hover { filter: brightness(1.08); }
+  .add-btn:focus-visible { outline: 2px solid var(--washi); outline-offset: 3px; }
+
+  .note { font-size: 12px; color: var(--mist); margin: 10px 0 0; min-height: 16px; }
+
+  /* ===== 단어 목록 ===== */
+  .list { list-style: none; margin: 0; padding: 0; }
+  .row {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 15px 2px; border-bottom: 1px solid rgba(242,237,227,.1);
+  }
+  .row .jp { font-family: var(--mincho); font-size: 22px; line-height: 1.2; }
+  .row .kana { font-family: var(--mincho); font-size: 12px; color: var(--mist); }
+  .row .ko { margin-left: auto; font-size: 14px; color: rgba(242,237,227,.82); text-align: right; }
+  .row .del {
+    background: none; border: 0; color: rgba(242,237,227,.32);
+    font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px;
+  }
+  .row .del:hover { color: var(--shu); }
+  .marks { font-size: 11px; color: var(--take); letter-spacing: .1em; }
+  .tag {
+    font-family: var(--mincho); font-size: 11px;
+    color: rgba(242,237,227,.34); border: 1px solid rgba(242,237,227,.18);
+    border-radius: 2px; padding: 1px 5px;
+  }
+
+  .empty {
+    padding: 44px 8px; text-align: center;
+    color: var(--mist); font-size: 14px; line-height: 1.9;
+  }
+  .empty .big {
+    display: block; font-family: var(--mincho); font-size: 30px;
+    color: rgba(242,237,227,.3); margin-bottom: 14px; letter-spacing: .2em;
+  }
+
+  /* ===== 시험 카드 ===== */
+  .stage { perspective: 1200px; }
+  .card {
+    position: relative; width: 100%; min-height: 260px; cursor: pointer;
+    transform-style: preserve-3d; transition: transform .5s cubic-bezier(.22,.7,.3,1);
+    border: 0; padding: 0; background: none; font: inherit; display: block;
+  }
+  .card.is-flipped { transform: rotateY(180deg); }
+  .card:focus-visible { outline: 2px solid var(--shu); outline-offset: 6px; }
+
+  .face {
+    position: absolute; inset: 0; backface-visibility: hidden;
+    background: var(--washi); color: var(--sumi); border-radius: 3px;
+    box-shadow: 0 14px 34px rgba(0,0,0,.34);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 30px 24px; text-align: center;
+  }
+  .face.back { transform: rotateY(180deg); background: var(--washi-2); }
+
+  .face .kana-top {
+    font-family: var(--mincho); font-size: 14px; color: rgba(35,32,28,.5);
+    letter-spacing: .14em; margin-bottom: 12px; min-height: 20px;
+  }
+  .face .word {
+    font-family: var(--mincho); font-weight: 700;
+    font-size: clamp(38px, 12vw, 58px); line-height: 1.15; letter-spacing: .04em;
+  }
+  .face .meaning { font-size: clamp(21px, 6vw, 27px); font-weight: 500; line-height: 1.4; }
+  .face .hint {
+    position: absolute; bottom: 16px; font-size: 11px;
+    letter-spacing: .16em; color: rgba(35,32,28,.38);
+  }
+
+  /* 花丸 — 맞혔을 때 찍히는 도장 */
+  .hanamaru {
+    position: absolute; top: 50%; left: 50%;
+    width: 190px; height: 190px; margin: -95px 0 0 -95px;
+    pointer-events: none; opacity: 0; z-index: 3;
+  }
+  .hanamaru path {
+    fill: none; stroke: var(--shu); stroke-width: 5;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .hanamaru.draw { opacity: .9; animation: stampOut 1.05s ease forwards; }
+  .hanamaru.draw path {
+    stroke-dasharray: 620; stroke-dashoffset: 620;
+    animation: ink .52s ease-out forwards;
+  }
+  .hanamaru.draw path.spiral { animation-delay: .3s; }
+  @keyframes ink { to { stroke-dashoffset: 0; } }
+  @keyframes stampOut {
+    0%   { opacity: .95; transform: rotate(-7deg) scale(1); }
+    72%  { opacity: .95; transform: rotate(-7deg) scale(1); }
+    100% { opacity: 0;   transform: rotate(-7deg) scale(1.14); }
+  }
+
+  .judge { display: flex; gap: 12px; margin-top: 20px; }
+  .judge button {
+    flex: 1; padding: 15px 10px; border-radius: 3px;
+    font-family: var(--sans); font-size: 15px; font-weight: 700;
+    cursor: pointer; border: 1px solid;
+  }
+  .judge .yes { background: var(--take); border-color: var(--take); color: #fff; }
+  .judge .no  { background: transparent; border-color: rgba(242,237,227,.34); color: var(--washi); }
+  .judge button:disabled { opacity: .28; cursor: default; }
+  .judge button:focus-visible { outline: 2px solid var(--shu); outline-offset: 3px; }
+
+  .progress {
+    margin-top: 16px; font-size: 12px; color: var(--mist);
+    text-align: center; letter-spacing: .1em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .hanamaru.draw, .hanamaru.draw path { animation-duration: .01ms; }
+    .hanamaru.draw { opacity: 0; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <h1 class="brand-jp">単語帳</h1>
+      <p class="brand-ko">일본어 단어장</p>
+    </div>
+    <div class="tally"><b id="count">0</b>단어</div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-list" role="tab" aria-selected="true" aria-controls="panel-list">단어장</button>
+    <button class="tab" id="tab-quiz" role="tab" aria-selected="false" aria-controls="panel-quiz">시험</button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <!-- 단어장 -->
+  <section class="panel" id="panel-list" role="tabpanel" aria-labelledby="tab-list">
+    <div class="composer">
+      <div class="field">
+        <label for="f-word">일본어</label>
+        <input id="f-word" placeholder="切符" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-kana">읽는 법 (없으면 비워두세요)</label>
+        <input id="f-kana" placeholder="きっぷ" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-mean">뜻</label>
+        <input id="f-mean" placeholder="표, 티켓" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-cat">갈래</label>
+        <select id="f-cat">
+          <option value="travel">여행·식당</option>
+          <option value="basic">기초 단어</option>
+          <option value="time">숫자·날짜</option>
+          <option value="novel">소설</option>
+        </select>
+      </div>
+      <button class="add-btn" id="add">단어 넣기</button>
+      <p class="note" id="note"></p>
+    </div>
+
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <!-- 시험 -->
+  <section class="panel" id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+    <div class="stage">
+      <button class="card" id="card">
+        <div class="face front">
+          <div class="kana-top" id="c-kana"></div>
+          <div class="word" id="c-word">—</div>
+          <div class="hint">눌러서 뒤집기</div>
+        </div>
+        <div class="face back">
+          <div class="meaning" id="c-mean">—</div>
+          <div class="hint">눌러서 되돌리기</div>
+        </div>
+      </button>
+
+      <svg class="hanamaru" id="maru" viewBox="0 0 120 120" aria-hidden="true">
+        <path d="M60 20 A22 22 0 0 1 91.3 35.1 A22 22 0 0 1 99 68.9 A22 22 0 0 1 77.4 96 A22 22 0 0 1 42.6 96 A22 22 0 0 1 21 68.9 A22 22 0 0 1 28.7 35.1 A22 22 0 0 1 60 20 Z"/>
+        <path class="spiral" d="M69 50 a12 12 0 1 0 -3 20 a19 19 0 1 0 18 -24"/>
+      </svg>
+    </div>
+
+    <div class="judge">
+      <button class="no"  id="j-no">아직이요</button>
+      <button class="yes" id="j-yes">알아요</button>
+    </div>
+    <p class="progress" id="progress"></p>
+  </section>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// 1. 갈래 이름표
+// ─────────────────────────────────────────────
+const CATS = {
+  travel: { ko: '여행·식당', jp: '旅' },
+  basic:  { ko: '기초 단어', jp: '基' },
+  time:   { ko: '숫자·날짜', jp: '数' },
+  novel:  { ko: '소설',      jp: '文' },
+};
+
+// ─────────────────────────────────────────────
+// 2. 기본으로 들어있는 단어 [일본어, 읽는 법, 뜻, 갈래]
+// ─────────────────────────────────────────────
+const SEED = [
+  // 여행·식당
+  ['切符','きっぷ','표, 티켓','travel'],
+  ['荷物','にもつ','짐, 수하물','travel'],
+  ['両替','りょうがえ','환전','travel'],
+  ['混雑','こんざつ','혼잡, 붐빔','travel'],
+  ['会計','かいけい','계산 (식당에서)','travel'],
+  ['おすすめ','','추천','travel'],
+  ['予約','よやく','예약','travel'],
+  ['空港','くうこう','공항','travel'],
+  ['改札','かいさつ','개찰구','travel'],
+  ['乗り換え','のりかえ','환승','travel'],
+  ['片道','かたみち','편도','travel'],
+  ['往復','おうふく','왕복','travel'],
+  ['特急','とっきゅう','특급 (열차)','travel'],
+  ['各駅停車','かくえきていしゃ','각역 정차, 완행','travel'],
+  ['満席','まんせき','만석','travel'],
+  ['相席','あいせき','합석','travel'],
+  ['持ち帰り','もちかえり','포장, 테이크아웃','travel'],
+  ['お通し','おとおし','기본 안주','travel'],
+  ['定食','ていしょく','정식','travel'],
+  ['大盛り','おおもり','곱빼기','travel'],
+  ['替え玉','かえだま','사리 추가 (라멘)','travel'],
+  ['現金','げんきん','현금','travel'],
+  ['領収書','りょうしゅうしょ','영수증','travel'],
+  ['免税','めんぜい','면세','travel'],
+  ['売り切れ','うりきれ','매진, 품절','travel'],
+  ['行列','ぎょうれつ','줄, 긴 대기줄','travel'],
+  ['案内所','あんないじょ','안내소','travel'],
+  ['温泉','おんせん','온천','travel'],
+  ['浴衣','ゆかた','유카타','travel'],
+  ['露天風呂','ろてんぶろ','노천탕','travel'],
+  ['徒歩','とほ','도보','travel'],
+  ['地図','ちず','지도','travel'],
+
+  // 기초 단어
+  ['天気','てんき','날씨','basic'],
+  ['元気','げんき','건강함, 잘 지냄','basic'],
+  ['仕事','しごと','일, 직업','basic'],
+  ['会社','かいしゃ','회사','basic'],
+  ['学校','がっこう','학교','basic'],
+  ['友達','ともだち','친구','basic'],
+  ['家族','かぞく','가족','basic'],
+  ['病院','びょういん','병원','basic'],
+  ['質問','しつもん','질문','basic'],
+  ['練習','れんしゅう','연습','basic'],
+  ['説明','せつめい','설명','basic'],
+  ['準備','じゅんび','준비','basic'],
+  ['相談','そうだん','상담, 의논','basic'],
+  ['約束','やくそく','약속','basic'],
+  ['経験','けいけん','경험','basic'],
+  ['意味','いみ','의미, 뜻','basic'],
+  ['理由','りゆう','이유','basic'],
+  ['場所','ばしょ','장소','basic'],
+  ['最近','さいきん','요즘, 최근','basic'],
+  ['大丈夫','だいじょうぶ','괜찮음','basic'],
+  ['便利','べんり','편리함','basic'],
+  ['簡単','かんたん','간단함','basic'],
+  ['大切','たいせつ','소중함','basic'],
+  ['危ない','あぶない','위험하다','basic'],
+  ['忙しい','いそがしい','바쁘다','basic'],
+  ['難しい','むずかしい','어렵다','basic'],
+  ['楽しい','たのしい','즐겁다','basic'],
+  ['覚える','おぼえる','외우다, 기억하다','basic'],
+  ['忘れる','わすれる','잊다','basic'],
+  ['手伝う','てつだう','돕다','basic'],
+  ['探す','さがす','찾다','basic'],
+  ['決める','きめる','정하다','basic'],
+
+  // 숫자·날짜
+  ['一日','ついたち','1일 (날짜)','time'],
+  ['二十日','はつか','20일','time'],
+  ['今日','きょう','오늘','time'],
+  ['明日','あした','내일','time'],
+  ['昨日','きのう','어제','time'],
+  ['明後日','あさって','모레','time'],
+  ['一昨日','おととい','그저께','time'],
+  ['今週','こんしゅう','이번 주','time'],
+  ['来週','らいしゅう','다음 주','time'],
+  ['先週','せんしゅう','지난주','time'],
+  ['今月','こんげつ','이번 달','time'],
+  ['来月','らいげつ','다음 달','time'],
+  ['毎日','まいにち','매일','time'],
+  ['週末','しゅうまつ','주말','time'],
+  ['平日','へいじつ','평일','time'],
+  ['午前','ごぜん','오전','time'],
+  ['午後','ごご','오후','time'],
+  ['半','はん','반 (30분)','time'],
+  ['一時間','いちじかん','한 시간','time'],
+  ['三十分','さんじゅっぷん','30분','time'],
+  ['一人','ひとり','한 명','time'],
+  ['二人','ふたり','두 명','time'],
+  ['一つ','ひとつ','하나','time'],
+  ['二つ','ふたつ','둘','time'],
+  ['八つ','やっつ','여덟','time'],
+  ['一枚','いちまい','한 장','time'],
+  ['一本','いっぽん','한 자루, 한 병','time'],
+  ['一杯','いっぱい','한 잔','time'],
+  ['一泊','いっぱく','1박','time'],
+  ['何時','なんじ','몇 시','time'],
+  ['何人','なんにん','몇 명','time'],
+  ['千円','せんえん','천 엔','time'],
+
+  // 소설
+  ['事件','じけん','사건','novel'],
+  ['犯人','はんにん','범인','novel'],
+  ['刑事','けいじ','형사','novel'],
+  ['捜査','そうさ','수사','novel'],
+  ['証拠','しょうこ','증거','novel'],
+  ['動機','どうき','동기','novel'],
+  ['現場','げんば','현장','novel'],
+  ['疑う','うたがう','의심하다','novel'],
+  ['真実','しんじつ','진실','novel'],
+  ['秘密','ひみつ','비밀','novel'],
+  ['嘘','うそ','거짓말','novel'],
+  ['沈黙','ちんもく','침묵','novel'],
+  ['気配','けはい','기척, 낌새','novel'],
+  ['記憶','きおく','기억','novel'],
+  ['孤独','こどく','고독','novel'],
+  ['静か','しずか','조용함','novel'],
+  ['微か','かすか','희미함','novel'],
+  ['曖昧','あいまい','애매함','novel'],
+  ['呟く','つぶやく','중얼거리다','novel'],
+  ['眺める','ながめる','바라보다','novel'],
+  ['頷く','うなずく','고개를 끄덕이다','novel'],
+  ['溜め息','ためいき','한숨','novel'],
+  ['表情','ひょうじょう','표정','novel'],
+  ['瞳','ひとみ','눈동자','novel'],
+  ['涙','なみだ','눈물','novel'],
+  ['影','かげ','그림자','novel'],
+  ['夕暮れ','ゆうぐれ','해질녘','novel'],
+  ['風景','ふうけい','풍경','novel'],
+  ['季節','きせつ','계절','novel'],
+  ['運命','うんめい','운명','novel'],
+  ['懐かしい','なつかしい','그립다','novel'],
+  ['感じる','かんじる','느끼다','novel'],
+];
+
+const KEY = 'jp-vocab:words';
+
+let words   = [];      // 단어 목록
+let filter  = 'all';   // 지금 고른 갈래
+let queue   = [];      // 시험에 낼 순서
+let current = null;    // 지금 보고 있는 단어
+
+const $ = id => document.getElementById(id);
+const makeId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// ─────────────────────────────────────────────
+// 3. 저장하고 불러오기
+// ─────────────────────────────────────────────
+// 저장소 — 클로드 안에서는 window.storage, 폰/브라우저에서는 localStorage
+const hasWinStore = typeof window.storage !== 'undefined'
+  && window.storage && typeof window.storage.get === 'function';
+
+const store = {
+  async get(k) {
+    if (hasWinStore) {
+      try { const r = await window.storage.get(k); return r && r.value ? r.value : null; }
+      catch (e) { return null; }
+    }
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  },
+  async set(k, v) {
+    if (hasWinStore) {
+      try { await window.storage.set(k, v); return; } catch (e) {}
+    }
+    try { localStorage.setItem(k, v); } catch (e) {}
+  }
+};
+
+async function save() {
+  await store.set(KEY, JSON.stringify(words));
+}
+
+function seedWords() {
+  return SEED.map(([jp, kana, ko, cat]) => ({ jp, kana, ko, cat, hit: 0, id: makeId() }));
+}
+
+async function loadWords() {
+  let saved = [];
+  try {
+    const raw = await store.get(KEY);
+    if (raw) saved = JSON.parse(raw);
+  } catch (e) {}
+
+  if (saved.length === 0) return seedWords();
+
+  // 이미 저장된 단어는 그대로 두고, 새로 늘어난 기본 단어만 뒤에 붙이기
+  const have = new Set(saved.map(w => w.jp));
+  const extra = seedWords().filter(w => !have.has(w.jp));
+  return saved.map(w => ({ ...w, cat: w.cat || 'travel' })).concat(extra);
+}
+
+// ─────────────────────────────────────────────
+// 4. 화면 그리기
+// ─────────────────────────────────────────────
+function visible() {
+  return filter === 'all' ? words : words.filter(w => w.cat === filter);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function renderChips() {
+  const list = [['all', '전체']].concat(Object.keys(CATS).map(k => [k, CATS[k].ko]));
+  $('chips').innerHTML = list.map(([key, label]) => {
+    const n = key === 'all' ? words.length : words.filter(w => w.cat === key).length;
+    return `<button class="chip" data-cat="${key}" aria-pressed="${filter === key}">${label} ${n}</button>`;
+  }).join('');
+}
+
+function renderList() {
+  $('count').textContent = visible().length;
+  const ul = $('list');
+  const rows = visible();
+
+  if (rows.length === 0) {
+    ul.innerHTML = `<li class="empty">
+      <span class="big">空</span>
+      이 갈래에는 아직 단어가 없어요.<br>위에 하나 넣어보세요.
+    </li>`;
+    return;
+  }
+
+  ul.innerHTML = rows.map(w => `
+    <li class="row">
+      <span class="jp">${esc(w.jp)}</span>
+      ${w.kana ? `<span class="kana">${esc(w.kana)}</span>` : ''}
+      <span class="tag">${CATS[w.cat] ? CATS[w.cat].jp : '·'}</span>
+      <span class="marks">${'●'.repeat(Math.min(w.hit || 0, 3))}</span>
+      <span class="ko">${esc(w.ko)}</span>
+      <button class="del" data-id="${w.id}" aria-label="${esc(w.jp)} 지우기">×</button>
+    </li>
+  `).join('');
+}
+
+function renderAll() { renderChips(); renderList(); }
+
+// ─────────────────────────────────────────────
+// 5. 갈래 고르기
+// ─────────────────────────────────────────────
+$('chips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  filter = chip.dataset.cat;
+  renderAll();
+  if (!$('panel-quiz').hidden) startQuiz();
+});
+
+// ─────────────────────────────────────────────
+// 6. 단어 넣기 / 지우기
+// ─────────────────────────────────────────────
+function addWord() {
+  const jp   = $('f-word').value.trim();
+  const kana = $('f-kana').value.trim();
+  const ko   = $('f-mean').value.trim();
+  const cat  = $('f-cat').value;
+
+  if (!jp || !ko) {
+    $('note').textContent = '일본어와 뜻은 둘 다 채워주세요.';
+    return;
+  }
+
+  words.unshift({ jp, kana, ko, cat, hit: 0, id: makeId() });
+  save();
+  renderAll();
+
+  $('f-word').value = $('f-kana').value = $('f-mean').value = '';
+  $('f-word').focus();
+  $('note').textContent = `${jp} 담았어요.`;
+  setTimeout(() => { $('note').textContent = ''; }, 2200);
+}
+
+$('add').addEventListener('click', addWord);
+['f-word','f-kana','f-mean'].forEach(id => {
+  $(id).addEventListener('keydown', e => { if (e.key === 'Enter') addWord(); });
+});
+
+$('list').addEventListener('click', e => {
+  const btn = e.target.closest('.del');
+  if (!btn) return;
+  words = words.filter(w => w.id !== btn.dataset.id);
+  save();
+  renderAll();
+});
+
+// ─────────────────────────────────────────────
+// 7. 탭 전환
+// ─────────────────────────────────────────────
+function showTab(which) {
+  const isQuiz = which === 'quiz';
+  $('tab-list').setAttribute('aria-selected', String(!isQuiz));
+  $('tab-quiz').setAttribute('aria-selected', String(isQuiz));
+  $('panel-list').hidden = isQuiz;
+  $('panel-quiz').hidden = !isQuiz;
+  if (isQuiz) startQuiz();
+}
+$('tab-list').addEventListener('click', () => showTab('list'));
+$('tab-quiz').addEventListener('click', () => showTab('quiz'));
+
+// ─────────────────────────────────────────────
+// 8. 시험
+// ─────────────────────────────────────────────
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  queue = shuffle(visible());
+  nextCard();
+}
+
+function nextCard() {
+  $('card').classList.remove('is-flipped');
+
+  if (queue.length === 0) {
+    current = null;
+    const has = visible().length > 0;
+    $('c-kana').textContent = '';
+    $('c-word').textContent = has ? '一周' : '空';
+    $('c-mean').textContent = has ? '한 바퀴 다 돌았어요' : '이 갈래에는 단어가 없어요';
+    $('progress').textContent = has ? '시험 탭을 다시 누르면 처음부터' : '';
+    $('j-yes').disabled = $('j-no').disabled = true;
+    return;
+  }
+
+  current = queue.shift();
+  $('j-yes').disabled = $('j-no').disabled = false;
+  $('c-kana').textContent = current.kana || '';
+  $('c-word').textContent = current.jp;
+  $('c-mean').textContent = current.ko;
+  $('progress').textContent = `남은 단어 ${queue.length}개`;
+}
+
+$('card').addEventListener('click', () => {
+  $('card').classList.toggle('is-flipped');
+});
+
+$('j-yes').addEventListener('click', () => {
+  if (!current) return;
+  const found = words.find(w => w.id === current.id);
+  if (found) found.hit = (found.hit || 0) + 1;
+  save();
+  renderList();
+  stampHanamaru();
+  setTimeout(nextCard, 780);
+});
+
+$('j-no').addEventListener('click', () => {
+  if (!current) return;
+  queue.push(current);   // 모르는 단어는 뒤로 다시 보내기
+  nextCard();
+});
+
+function stampHanamaru() {
+  const m = $('maru');
+  m.classList.remove('draw');
+  void m.offsetWidth;    // 애니메이션을 처음부터 다시 돌리기 위한 한 줄
+  m.classList.add('draw');
+}
+
+// ─────────────────────────────────────────────
+// 9. 시작
+// ─────────────────────────────────────────────
+(async function init() {
+  words = await loadWords();
+  await save();
+  renderAll();
+})();
+
+// 인터넷 없이도 열리게 하기 (해외에서 데이터 없을 때)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
