@@ -22,5 +22,17 @@
         "D5:F1:CB:3D:24:FB:03:F0:55:75:1F:19:FF:88:03:60:0D:F8:27:D9:BE:AF:9F:52:C5:C7:66:ED:74:83:61:6A"
       ]
     }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.kks16688_a11y.shift",
+      "sha256_cert_fingerprints": [
+        "DC:11:FD:16:E5:9E:71:08:9F:F3:86:F0:F1:35:7E:C0:EF:67:85:1B:08:5D:2D:32:F3:A0:B0:61:71:91:B7:5F"
+      ]
+    }
   }
 ]
